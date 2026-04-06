@@ -6,7 +6,7 @@ use rand::rngs::SysRng;
 use sha2::Sha256;
 
 use crate::auth::verifier::{CredentialVerifier, VerificationError};
-use crate::database::models::{Credential, CredentialKind};
+use crate::database::models::Credential;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -39,10 +39,6 @@ impl PasswordVerifier {
 
 impl CredentialVerifier for PasswordVerifier {
     type Payload = str;
-
-    fn kind(&self) -> CredentialKind {
-        CredentialKind::Password
-    }
 
     async fn verify(&self, credential: &Credential, password: &Self::Payload) -> Result<(), VerificationError> {
         let peppered = self.peppered(password);
