@@ -1,0 +1,7 @@
+/target
+.env
+
+# Agents
+AGENTS.md
+CLAUDE.md
+.claude/
