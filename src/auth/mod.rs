@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 pub mod password;
+pub mod revocation;
 pub mod session;
 pub mod token;
 pub mod totp;
