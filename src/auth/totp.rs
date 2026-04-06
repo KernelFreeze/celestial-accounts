@@ -5,7 +5,7 @@ use subtle::ConstantTimeEq;
 use totp_rs::{Algorithm, TOTP};
 
 use crate::auth::verifier::{CredentialVerifier, VerificationError};
-use crate::database::models::{Credential, CredentialKind};
+use crate::database::models::Credential;
 
 const NONCE_LEN: usize = 12;
 
@@ -65,10 +65,6 @@ impl TotpVerifier {
         }
     }
 
-    pub fn encryptor(&self) -> &TotpEncryptor {
-        &self.encryptor
-    }
-
     fn verify_code(secret: &[u8], code: &str) -> Result<(), VerificationError> {
         let totp = build_totp(secret)?;
 
@@ -99,10 +95,6 @@ fn build_totp(secret: &[u8]) -> Result<TOTP, VerificationError> {
 
 impl CredentialVerifier for TotpVerifier {
     type Payload = str;
-
-    fn kind(&self) -> CredentialKind {
-        CredentialKind::Totp
-    }
 
     async fn verify(&self, credential: &Credential, code: &Self::Payload) -> Result<(), VerificationError> {
         let secret = self.encryptor.decrypt(&credential.credential_data)?;

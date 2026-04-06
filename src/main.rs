@@ -106,7 +106,9 @@ async fn main() -> Result<(), Error> {
 
     let database = Database::new_with_url(database_url).await?;
     let password_verifier = PasswordVerifier::new(pepper);
-    let app = views::router().with_state(AppState::new(database, password_verifier, paseto_keys, totp_verifier));
+    let app = views::router()
+        .with_state(AppState::new(database, password_verifier, paseto_keys, totp_verifier))
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     let socket_addr = socket_address()?;
     let listener = TcpListener::bind(socket_addr).await?;

@@ -29,9 +29,6 @@ pub trait CredentialVerifier: Send + Sync {
     /// password).
     type Payload: Send + ?Sized;
 
-    /// Which credential kind this verifier handles.
-    fn kind(&self) -> CredentialKind;
-
     /// Verify a credential against the given payload.
     async fn verify(&self, credential: &Credential, payload: &Self::Payload) -> Result<(), VerificationError>;
 
