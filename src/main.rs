@@ -1,10 +1,12 @@
 use std::env::var;
 use std::net::{IpAddr, SocketAddr};
 
+use deadpool_redis::{Config as RedisConfig, CreatePoolError as RedisCreatePoolError, Runtime as RedisRuntime};
 use thiserror::Error;
 use tokio::net::TcpListener;
 
 use crate::auth::password::PasswordVerifier;
+use crate::auth::revocation::TokenRevocationStore;
 use crate::auth::token::PasetoKeys;
 use crate::auth::totp::TotpVerifier;
 use crate::database::Database;
@@ -36,8 +38,14 @@ pub enum Error {
     #[error("Failed to connect to database: {0}")]
     Database(#[from] database::DatabaseConnectionError),
 
+    #[error("Failed to create Redis pool: {0}")]
+    RedisPool(#[from] RedisCreatePoolError),
+
     #[error("DATABASE_URL environment variable must be set")]
     DatabaseUrlNotSet,
+
+    #[error("REDIS_URL environment variable must be set")]
+    RedisUrlNotSet,
 
     #[error("PEPPER environment variable must be set")]
     PepperNotSet,
@@ -78,6 +86,7 @@ async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt::init();
 
     let database_url = var("DATABASE_URL").map_err(|_| Error::DatabaseUrlNotSet)?;
+    let redis_url = normalize_redis_url(var("REDIS_URL").map_err(|_| Error::RedisUrlNotSet)?);
     let pepper_hex = var("PEPPER").map_err(|_| Error::PepperNotSet)?;
     let pepper = hex::decode(&pepper_hex)?;
 
@@ -105,9 +114,20 @@ async fn main() -> Result<(), Error> {
     let totp_verifier = TotpVerifier::new(totp_encryption_key);
 
     let database = Database::new_with_url(database_url).await?;
+    let mut redis_config = RedisConfig::default();
+    redis_config.url = Some(redis_url);
+    let redis_pool = redis_config.create_pool(Some(RedisRuntime::Tokio1))?;
+    let token_revocation_store = TokenRevocationStore::new(redis_pool);
+
     let password_verifier = PasswordVerifier::new(pepper);
     let app = views::router()
-        .with_state(AppState::new(database, password_verifier, paseto_keys, totp_verifier))
+        .with_state(AppState::new(
+            database,
+            password_verifier,
+            paseto_keys,
+            totp_verifier,
+            token_revocation_store,
+        ))
         .into_make_service_with_connect_info::<SocketAddr>();
 
     let socket_addr = socket_address()?;
@@ -115,6 +135,14 @@ async fn main() -> Result<(), Error> {
 
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+fn normalize_redis_url(redis_url: String) -> String {
+    if redis_url.contains("://") {
+        redis_url
+    } else {
+        format!("redis://{redis_url}")
+    }
 }
 
 fn bind_address() -> Result<IpAddr, BindAddressError> {
