@@ -53,8 +53,7 @@ pub enum LoginRequest {
 /// Authenticate a user against the database using the appropriate credential
 /// verifier.
 ///
-/// Every code path — valid account, missing account, wrong password, locked
-/// account — performs the same cryptographic work to prevent timing-based
+/// Every code path performs the same cryptographic work to prevent timing-based
 /// enumeration.
 pub async fn authenticate(
     conn: &mut AsyncPgConnection, request: &LoginRequest, password_verifier: &PasswordVerifier,
