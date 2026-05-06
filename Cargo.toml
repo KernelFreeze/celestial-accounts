@@ -11,7 +11,7 @@ axum-extra = { version = "0.12", features = ["cookie"] }
 base64 = "0.22"
 deadpool-redis = { version = "0.23.0", features = ["serde", "uuid"] }
 derive_more = { version = "2.1.1", features = ["deref", "deref_mut"] }
-diesel = { version = "2.3.7", default-features = false, features = ["time", "uuid", "serde_json", "postgres_backend"] }
+diesel = { version = "2.3.8", default-features = false, features = ["time", "uuid", "serde_json", "postgres_backend"] }
 diesel-async = { version = "0.8.0", features = ["deadpool", "postgres"] }
 futures-util = "0.3.32"
 oxide-auth = "0.6.1"
